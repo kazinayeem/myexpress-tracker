@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Income & Expense Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1>Income & Expense Tracker</h1>
+            <div class="nav-menu">
+                <span id="user-name"></span>
+                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="card">
+                <h3>Total Income</h3>
+                <p class="amount income" id="total-income">$0.00</p>
+            </div>
+            <div class="card">
+                <h3>Total Expense</h3>
+                <p class="amount expense" id="total-expense">$0.00</p>
+            </div>
+            <div class="card">
+                <h3>Balance</h3>
+                <p class="amount balance" id="balance">$0.00</p>
+            </div>
+        </div>
+
+        <!-- Today's Summary -->
+        <div class="summary-cards">
+            <div class="card">
+                <h3>Today's Income</h3>
+                <p class="amount income" id="today-income">$0.00</p>
+            </div>
+            <div class="card">
+                <h3>Today's Expense</h3>
+                <p class="amount expense" id="today-expense">$0.00</p>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-container">
+            <div class="card chart-card">
+                <h3>Last 30 Days - Income vs Expense</h3>
+                <canvas id="daily-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="actions-section">
+            <h2>Quick Actions</h2>
+            <div class="action-buttons">
+                <button onclick="showAddIncomeModal()" class="btn btn-primary">Add Income</button>
+                <button onclick="showAddExpenseModal()" class="btn btn-danger">Add Expense</button>
+                <button onclick="exportPDF()" class="btn btn-secondary">Export Report (PDF)</button>
+            </div>
+        </div>
+
+        <!-- Transactions Section -->
+        <div class="transactions-section">
+            <h2>Recent Transactions</h2>
+            
+            <div class="filters">
+                <select id="transaction-type" onchange="loadTransactions()">
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                </select>
+                
+                <select id="category-filter" onchange="loadTransactions()">
+                    <option value="">All Categories</option>
+                </select>
+                
+                <input type="date" id="date-filter" onchange="loadTransactions()">
+                
+                <button onclick="clearFilters()" class="btn btn-secondary btn-sm">Clear Filters</button>
+            </div>
+
+            <div id="transactions-list"></div>
+        </div>
+    </div>
+
+    <!-- Add Income Modal -->
+    <div id="income-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" onclick="closeModals()">&times;</span>
+            <h2 id="income-modal-title">Add Income</h2>
+            
+            <form id="income-form">
+                <input type="hidden" id="income-id">
+                
+                <div class="form-group">
+                    <label for="income-category">Category</label>
+                    <select id="income-category" required></select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="income-amount">Amount</label>
+                    <input type="number" id="income-amount" step="0.01" min="0.01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="income-date">Date</label>
+                    <input type="date" id="income-date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="income-description">Description</label>
+                    <textarea id="income-description" rows="3"></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div id="expense-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" onclick="closeModals()">&times;</span>
+            <h2 id="expense-modal-title">Add Expense</h2>
+            
+            <form id="expense-form">
+                <input type="hidden" id="expense-id">
+                
+                <div class="form-group">
+                    <label for="expense-category">Category</label>
+                    <select id="expense-category" required></select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="expense-amount">Amount</label>
+                    <input type="number" id="expense-amount" step="0.01" min="0.01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="expense-date">Date</label>
+                    <input type="date" id="expense-date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="expense-description">Description</label>
+                    <textarea id="expense-description" rows="3"></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Income & Expense Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-track {
+            background: #374151;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenuOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40" onclick="toggleMobileMenu()"></div>
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Expense Tracker
+                </h1>
+                <button onclick="toggleMobileMenu()" class="md:hidden text-gray-600 dark:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- User Info -->
+            <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        <span id="userInitial">U</span>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800 dark:text-white" id="usernameDisplay">Loading...</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400" id="emailDisplay">...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="space-y-2">
+                <a href="#" onclick="showSection('dashboard', event); return false;" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                
+                <a href="#" onclick="showSection('income', event); return false;" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    <span class="font-medium">Income</span>
+                </a>
+                
+                <a href="#" onclick="showSection('expense', event); return false;" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                    </svg>
+                    <span class="font-medium">Expenses</span>
+                </a>
+                
+                <a href="#" onclick="showSection('reports', event); return false;" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    <span class="font-medium">Reports</span>
+                </a>
+            </nav>
+            
+            <!-- Bottom Actions -->
+            <div class="absolute bottom-6 left-6 right-6 space-y-2">
+                <button onclick="showSettings()" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span class="font-medium">Settings</span>
+                </button>
+                <button onclick="logout()" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    <span class="font-medium">Logout</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <div class="md:ml-64 min-h-screen">
+        <!-- Top Bar -->
+        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
+            <div class="flex items-center justify-between p-4">
+                <div class="flex items-center space-x-4">
+                    <button onclick="toggleMobileMenu()" class="md:hidden text-gray-600 dark:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-white" id="sectionTitle">Dashboard</h2>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <!-- Currency Display -->
+                    <div class="hidden sm:flex items-center space-x-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Currency:</span>
+                        <span class="text-sm font-bold text-gray-800 dark:text-white" id="currentCurrency">USD</span>
+                    </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                        <svg id="themeIconLight" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                        <svg id="themeIconDark" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Dashboard Section -->
+        <main id="dashboardSection" class="p-4 md:p-6 lg:p-8">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+                <!-- Total Income -->
+                <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white fade-in">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-medium opacity-90">Total Income</h3>
+                        <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>
+                        </svg>
+                    </div>
+                    <p class="text-3xl font-bold mb-1"><span id="currencySymbolIncome">$</span><span id="totalIncome">0.00</span></p>
+                    <p class="text-xs opacity-75">This month</p>
+                </div>
+                
+                <!-- Total Expense -->
+                <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white fade-in" style="animation-delay: 0.1s;">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-medium opacity-90">Total Expenses</h3>
+                        <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path>
+                        </svg>
+                    </div>
+                    <p class="text-3xl font-bold mb-1"><span id="currencySymbolExpense">$</span><span id="totalExpense">0.00</span></p>
+                    <p class="text-xs opacity-75">This month</p>
+                </div>
+                
+                <!-- Balance -->
+                <div class="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 text-white fade-in sm:col-span-2 lg:col-span-1" style="animation-delay: 0.2s;">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-medium opacity-90">Balance</h3>
+                        <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-3xl font-bold mb-1"><span id="currencySymbolBalance">$</span><span id="balance">0.00</span></p>
+                    <p class="text-xs opacity-75">Current month</p>
+                </div>
+            </div>
+            
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Expense by Category -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 fade-in" style="animation-delay: 0.3s;">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Expenses by Category</h3>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Monthly Trend -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 fade-in" style="animation-delay: 0.4s;">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Monthly Trend</h3>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Transactions -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 fade-in" style="animation-delay: 0.5s;">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Recent Transactions</h3>
+                    <button onclick="exportPDF()" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition text-sm font-medium">
+                        Export PDF
+                    </button>
+                </div>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <div id="recentTransactions" class="space-y-2">
+                        <!-- Transactions will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Income Section -->
+        <section id="incomeSection" class="hidden p-4 md:p-6 lg:p-8">
+            <div class="max-w-4xl mx-auto">
+                <!-- Add Income Form -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Add Income</h3>
+                    <form id="incomeForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" id="incomeFormCurrency">$</span>
+                                    <input type="number" id="incomeAmount" step="0.01" required class="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
+                                <select id="incomeCategory" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                    <option value="">Select category</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                            <input type="text" id="incomeDescription" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
+                            <input type="date" id="incomeDate" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition">
+                            Add Income
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Income List -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Income History</h3>
+                    <div id="incomeList" class="space-y-2 custom-scrollbar max-h-96 overflow-y-auto">
+                        <!-- Income items will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Expense Section -->
+        <section id="expenseSection" class="hidden p-4 md:p-6 lg:p-8">
+            <div class="max-w-4xl mx-auto">
+                <!-- Add Expense Form -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Add Expense</h3>
+                    <form id="expenseForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" id="expenseFormCurrency">$</span>
+                                    <input type="number" id="expenseAmount" step="0.01" required class="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
+                                <select id="expenseCategory" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                    <option value="">Select category</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                            <input type="text" id="expenseDescription" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
+                            <input type="date" id="expenseDate" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition">
+                            Add Expense
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Expense List -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Expense History</h3>
+                    <div id="expenseList" class="space-y-2 custom-scrollbar max-h-96 overflow-y-auto">
+                        <!-- Expense items will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Reports Section -->
+        <section id="reportsSection" class="hidden p-4 md:p-6 lg:p-8">
+            <div class="max-w-6xl mx-auto">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Filter Reports</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date</label>
+                            <input type="date" id="reportStartDate" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date</label>
+                            <input type="date" id="reportEndDate" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">&nbsp;</label>
+                            <button onclick="loadReports()" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 rounded-lg font-medium hover:shadow-lg transition">
+                                Generate Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Income Summary</h3>
+                        <div id="incomeReport" class="space-y-2">
+                            <!-- Report data will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Expense Summary</h3>
+                        <div id="expenseReport" class="space-y-2">
+                            <!-- Report data will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6 slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-white">Settings</h3>
+                <button onclick="closeSettings()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Currency Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Currency</label>
+                    <select id="currencySelect" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                        <option value="USD">🇺🇸 US Dollar (USD)</option>
+                        <option value="EUR">🇪🇺 Euro (EUR)</option>
+                        <option value="GBP">🇬🇧 British Pound (GBP)</option>
+                        <option value="JPY">🇯🇵 Japanese Yen (JPY)</option>
+                        <option value="CNY">🇨🇳 Chinese Yuan (CNY)</option>
+                        <option value="INR">🇮🇳 Indian Rupee (INR)</option>
+                        <option value="BDT">🇧🇩 Bangladesh Taka (BDT)</option>
+                        <option value="AUD">🇦🇺 Australian Dollar (AUD)</option>
+                        <option value="CAD">🇨🇦 Canadian Dollar (CAD)</option>
+                        <option value="CHF">🇨🇭 Swiss Franc (CHF)</option>
+                        <option value="BRL">🇧🇷 Brazilian Real (BRL)</option>
+                        <option value="KRW">🇰🇷 South Korean Won (KRW)</option>
+                        <option value="MXN">🇲🇽 Mexican Peso (MXN)</option>
+                        <option value="SGD">🇸🇬 Singapore Dollar (SGD)</option>
+                        <option value="PKR">🇵🇰 Pakistani Rupee (PKR)</option>
+                        <option value="SAR">🇸🇦 Saudi Riyal (SAR)</option>
+                        <option value="AED">🇦🇪 UAE Dirham (AED)</option>
+                        <option value="THB">🇹🇭 Thai Baht (THB)</option>
+                        <option value="MYR">🇲🇾 Malaysian Ringgit (MYR)</option>
+                        <option value="IDR">🇮🇩 Indonesian Rupiah (IDR)</option>
+                    </select>
+                </div>
+                
+                <!-- Theme Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Theme</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="setTheme('light')" class="theme-option flex items-center justify-center space-x-2 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                            <span class="font-medium">Light</span>
+                        </button>
+                        <button onclick="setTheme('dark')" class="theme-option flex items-center justify-center space-x-2 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                            </svg>
+                            <span class="font-medium">Dark</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Save Button -->
+                <button onclick="saveSettings()" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition">
+                    Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/auth.js?v=2"></script>
+    <script src="/static/js/dashboard.js?v=2"></script>
+</body>
+</html>
